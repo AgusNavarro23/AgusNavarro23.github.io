@@ -6,6 +6,7 @@
     <title>Dashboard CompraVenta</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -111,6 +112,23 @@
             display: inline-block;
             margin-bottom: 1rem;
         }
+        #amountTabContent {
+            /* Retira el filtro inicial, lo aplicaremos solo si está protegido */
+        }
+        #passwordOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(248, 249, 250, 0.9);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
@@ -121,7 +139,6 @@
     </div>
 
     <div class="container">
-        <!-- File Upload -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="file-upload-area" onclick="document.getElementById('csvFile').click()">
@@ -132,133 +149,79 @@
             </div>
         </div>
 
-        <!-- Filters Section -->
-        <div id="filterSection" style="display: none;">
-            <div class="filter-section">
-                <h5 class="mb-3">Filtros</h5>
-                <div class="row g-3">
+        <div id="dashboardContent" style="display: none;">
+            <ul class="nav nav-tabs" id="dataTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="quantity-tab" data-bs-toggle="tab" data-bs-target="#quantity-tab-pane" type="button" role="tab" aria-controls="quantity-tab-pane" aria-selected="true" onclick="switchData('quantity')">Cantidades</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="amount-tab" data-bs-toggle="tab" data-bs-target="#amount-tab-pane" type="button" role="tab" aria-controls="amount-tab-pane" aria-selected="false" onclick="handleAmountTabClick()">Montos</button>
+                </li>
+            </ul>
 
-                    <div class="col-md-2">
-                        <label class="form-label">Mes desde</label>
-                        <select class="form-select" id="filterMesDesde">
-                            <option value="0">Inicio</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Mes hasta</label>
-                        <select class="form-select" id="filterMesHasta">
-                            <option value="11">Fin</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <button class="btn btn-primary w-100" onclick="applyFilters()">Aplicar Filtros</button>
+            <div class="tab-content pt-3" id="dataTabContent">
+                <div class="tab-pane fade show active" id="quantity-tab-pane" role="tabpanel" aria-labelledby="quantity-tab" tabindex="0">
+                    <div id="quantityTabContent">
+                        <div class="filter-section">
+                            <h5 class="mb-3">Filtros</h5>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Mes desde</label>
+                                    <select class="form-select" id="filterMesDesdeQ">
+                                        <option value="0">Inicio</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Mes hasta</label>
+                                    <select class="form-select" id="filterMesHastaQ">
+                                        <option value="11">Fin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-primary w-100" onclick="applyFilters('quantity')">Aplicar Filtros</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="quantityDashboard">
+                            </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Summary Cards -->
-        <div id="summaryCards" style="display: none;">
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="card stat-card">
-                        <div class="stat-label">Periodo 2023-2024</div>
-                        <div class="stat-value" id="total2023"></div>
-                        <div class="text-muted">Total de unidades</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card stat-card">
-                        <div class="stat-label">Periodo 2024-2025</div>
-                        <div class="stat-value" id="total2024"></div>
-                        <div class="text-muted">Total de unidades</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card stat-card">
-                        <div class="stat-label">Variación</div>
-                        <div class="stat-value" id="variation"></div>
-                        <div class="text-muted">Diferencia entre periodos</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Row 1: Column Charts -->
-            <h3 class="section-title">📊 Comparación por Periodo</h3>
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <h5 class="text-center">Periodo 2023-2024</h5>
-                        <div class="chart-container">
-                            <canvas id="chart2023"></canvas>
+                <div class="tab-pane fade" id="amount-tab-pane" role="tabpanel" aria-labelledby="amount-tab" tabindex="0" style="position: relative; min-height: 80vh;">
+                    <div id="passwordOverlay" style="display: none;">
+                        <div class="card p-4 shadow-lg text-center">
+                            <h4>Acceso Restringido 🔒</h4>
+                            <p>Ingresa la contraseña para ver los Montos.</p>
+                            <input type="password" id="passwordInput" class="form-control mb-3" placeholder="Contraseña">
+                            <button class="btn btn-primary" onclick="checkPassword()">Acceder</button>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">Pista: Contraseña es 'admin'</p>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <h5 class="text-center">Periodo 2024-2025</h5>
-                        <div class="chart-container">
-                            <canvas id="chart2024"></canvas>
+                    <div id="amountTabContent">
+                        <div class="filter-section">
+                            <h5 class="mb-3">Filtros</h5>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Mes desde</label>
+                                    <select class="form-select" id="filterMesDesdeM">
+                                        <option value="0">Inicio</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Mes hasta</label>
+                                    <select class="form-select" id="filterMesHastaM">
+                                        <option value="11">Fin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-primary w-100" onclick="applyFilters('amount')">Aplicar Filtros</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart Row 2: Line Chart -->
-            <h3 class="section-title">📈 Tendencia Combinada</h3>
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card p-3">
-                        <div class="chart-container">
-                            <canvas id="lineChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart Row 3: Pie Charts - Top 3 -->
-            <h3 class="section-title">🏆 Meses con Mayor Cantidad</h3>
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <span class="badge-top">TOP 3</span>
-                        <h5 class="text-center">Mejores Meses - Periodo 2023-2024</h5>
-                        <div class="chart-container-small">
-                            <canvas id="pieTop2023"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <span class="badge-top">TOP 3</span>
-                        <h5 class="text-center">Mejores Meses - Periodo 2024-2025</h5>
-                        <div class="chart-container-small">
-                            <canvas id="pieTop2024"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart Row 4: Pie Charts - Bottom 3 -->
-            <h3 class="section-title">📉 Meses con Menor Cantidad</h3>
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <span class="badge-bottom">LOW  3</span>
-                        <h5 class="text-center">Peores Meses - Periodo 2023-2024</h5>
-                        <div class="chart-container-small">
-                            <canvas id="pieBottom2023"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card p-3">
-                        <span class="badge-bottom">LOW 3</span>
-                        <h5 class="text-center">Peores Meses - Periodo 2024-2025</h5>
-                        <div class="chart-container-small">
-                            <canvas id="pieBottom2024"></canvas>
-                        </div>
+                        <div id="amountDashboard">
+                            </div>
                     </div>
                 </div>
             </div>
@@ -266,12 +229,25 @@
     </div>
 
     <script>
-        let chartInstances = [];
-        let originalData = {
+        // Objeto global para almacenar todos los datos parseados
+        let allData = {
             labels: [],
-            data2023: [],
-            data2024: []
+            quantity2023: [],
+            quantity2024: [],
+            amount2023: [],
+            amount2024: []
         };
+        let chartInstances = {};
+        let currentDataType = 'quantity';
+        let isAmountUnlocked = false; // Nuevo estado para la protección
+        const PASSWORD = 'admin';
+        
+        // Formateador de moneda (ajusta a tu moneda local si es necesario)
+        const currencyFormatter = new Intl.NumberFormat('es-AR', {
+            style: 'currency',
+            currency: 'ARS',
+            minimumFractionDigits: 2,
+        });
 
         document.getElementById('csvFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -283,150 +259,389 @@
                 reader.readAsText(file);
             }
         });
+        
+        // --- Password Logic ---
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            if (input === PASSWORD) {
+                isAmountUnlocked = true;
+                document.getElementById('passwordOverlay').style.display = 'none';
+                switchData('amount');
+            } else {
+                alert('Contraseña incorrecta.');
+                document.getElementById('passwordInput').value = ''; // Clear input
+            }
+        }
+
+        function handleAmountTabClick() {
+            if (!isAmountUnlocked) {
+                document.getElementById('passwordOverlay').style.display = 'flex';
+            } else {
+                switchData('amount');
+            }
+        }
+        
+        // --- Data Parsing ---
+        function cleanAndParseNumber(value, isAmount = false) {
+            let cleaned = value.replace(/"/g, '').replace(/\$/g, '').trim();
+            if (isAmount) {
+                 // Si el formato es ###.###.###,##, quitamos los puntos de miles y convertimos la coma en punto para JS
+                cleaned = cleaned.replace(/\./g, '').replace(/,/g, '.');
+            }
+            return parseFloat(cleaned) || 0;
+        }
 
         function parseAndDisplay(csvData) {
             const lines = csvData.split('\n').filter(line => line.trim());
             
-            const data2023 = [];
-            const data2024 = [];
-            const labels = [];
+            allData = {
+                labels: [],
+                quantity2023: [],
+                quantity2024: [],
+                amount2023: [],
+                amount2024: []
+            };
 
-            // Analizar la estructura del CSV
             for (let i = 3; i < lines.length; i++) {
                 const line = lines[i];
-                const allParts = line.split(',');
-                const parts = allParts.filter(part => part.trim() !== '');
+                // Regex para manejar campos entre comillas (como los montos)
+                const parts = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
                 
-                if (parts.length >= 4) {
-                    const month = parts[0].split('-')[0].trim();
-                    labels.push(month.charAt(0).toUpperCase() + month.slice(1));
-                    data2023.push(parseInt(parts[1]) || 0);
-                    data2024.push(parseInt(parts[3]) || 0);
+                // Limpiar partes
+                const cleanedParts = parts.map(p => p.trim());
+                
+                // El CSV tiene Periodo,Cantidad,Monto(2023),Periodo,Cantidad,Monto(2024)
+                // Usaremos los índices 1, 2, 4, 5
+                if (cleanedParts.length >= 6) {
+                    // La etiqueta del mes está en el índice 0 o 3. Usamos el 0.
+                    const month = cleanedParts[0].split('-')[0].trim();
+                    allData.labels.push(month.charAt(0).toUpperCase() + month.slice(1));
+                    
+                    // Columnas de datos:
+                    // Índice 1: Cantidad 2023
+                    // Índice 2: Monto 2023
+                    // Índice 4: Cantidad 2024
+                    // Índice 5: Monto 2024
+                    allData.quantity2023.push(cleanAndParseNumber(cleanedParts[1]));
+                    allData.amount2023.push(cleanAndParseNumber(cleanedParts[2], true)); // true para Monto
+                    allData.quantity2024.push(cleanAndParseNumber(cleanedParts[4]));
+                    allData.amount2024.push(cleanAndParseNumber(cleanedParts[5], true)); // true para Monto
                 }
             }
 
-            originalData = { labels, data2023, data2024 };
+            // Populate filter dropdowns for both tabs
+            populateFilters(allData.labels);
             
-            // Populate filter dropdowns
-            populateFilters(labels);
+            // Generate initial dashboard for Quantities
+            generateDashboardHTML('quantity');
+            // 🐛 CORRECCIÓN: Llamamos sin argumentos de datos. La función displaySummaryCards usa los datos globales por defecto.
+            displaySummaryCards('quantity'); 
+            createCharts('quantity');
             
-            displaySummary(data2023, data2024);
-            createCharts(labels, data2023, data2024);
-            document.getElementById('summaryCards').style.display = 'block';
-            document.getElementById('filterSection').style.display = 'block';
+            // Generate dashboard structure for Amounts (hidden initially)
+            generateDashboardHTML('amount');
+            
+            // Hide/Show content
+            document.getElementById('dashboardContent').style.display = 'block';
+            
+            // Ocultar el overlay de contraseña por defecto, se muestra al hacer clic
+            document.getElementById('passwordOverlay').style.display = 'flex';
         }
 
+        // --- Filter Logic ---
         function populateFilters(labels) {
-            const filterMesDesde = document.getElementById('filterMesDesde');
-            const filterMesHasta = document.getElementById('filterMesHasta');
-            
-            // Clear existing options except first
-            filterMesDesde.innerHTML = '<option value="0">Inicio</option>';
-            filterMesHasta.innerHTML = '';
-            
-            labels.forEach((label, index) => {
-                if (index > 0) {
-                    filterMesDesde.innerHTML += `<option value="${index}">${label}</option>`;
-                }
-                filterMesHasta.innerHTML += `<option value="${index}">${label}</option>`;
+            const filterIds = [
+                'filterMesDesdeQ', 'filterMesHastaQ', 
+                'filterMesDesdeM', 'filterMesHastaM'
+            ];
+
+            filterIds.forEach(id => {
+                const filterElement = document.getElementById(id);
+                // Clear existing options except first
+                filterElement.innerHTML = '<option value="0">Inicio</option>';
+                
+                labels.forEach((label, index) => {
+                    filterElement.innerHTML += `<option value="${index}">${label}</option>`;
+                });
+                
+                // Set last month as default for "hasta"
+                filterElement.value = labels.length > 0;
             });
-            
-            // Set last month as default for "hasta"
-            filterMesHasta.value = labels.length - 1;
         }
 
-        function applyFilters() {
-            const mesDesde = parseInt(document.getElementById('filterMesDesde').value);
-            const mesHasta = parseInt(document.getElementById('filterMesHasta').value);
+        function applyFilters(dataType) {
+            const suffix = dataType === 'quantity' ? 'Q' : 'M';
+            const mesDesde = parseInt(document.getElementById(`filterMesDesde${suffix}`).value);
+            const mesHasta = parseInt(document.getElementById(`filterMesHasta${suffix}`).value);
             
-            let labels = [...originalData.labels];
-            let data2023 = [...originalData.data2023];
-            let data2024 = [...originalData.data2024];
+            // Validar
+            if (mesDesde > mesHasta) {
+                alert('El mes de inicio no puede ser posterior al mes de fin.');
+                return;
+            }
             
-            displaySummary(data2023, data2024);
-            createCharts(labels, data2023, data2024);
+            // Aplicar filtros
+            let labels = allData.labels.slice(mesDesde, mesHasta + 1);
+            let data2023 = allData[`${dataType}2023`].slice(mesDesde, mesHasta + 1);
+            let data2024 = allData[`${dataType}2024`].slice(mesDesde, mesHasta + 1);
+            
+            displaySummaryCards(dataType, data2023, data2024);
+            createCharts(dataType, labels, data2023, data2024);
+        }
+        
+        // --- Dashboard Management ---
+        function switchData(dataType) {
+            currentDataType = dataType;
+            
+            // Obtener los filtros aplicados (o defaults)
+            const suffix = dataType === 'quantity' ? 'Q' : 'M';
+            // Usar .value y asegurar que la data está sincronizada con el filtro actual
+            const mesDesde = parseInt(document.getElementById(`filterMesDesde${suffix}`).value);
+            const mesHasta = parseInt(document.getElementById(`filterMesHasta${suffix}`).value);
+            
+            // Aplicar filtros
+            let labels = allData.labels.slice(mesDesde, mesHasta + 1);
+            let data2023 = allData[`${dataType}2023`].slice(mesDesde, mesHasta + 1);
+            let data2024 = allData[`${dataType}2024`].slice(mesDesde, mesHasta + 1);
+            
+            displaySummaryCards(dataType, data2023, data2024);
+            createCharts(dataType, labels, data2023, data2024);
         }
 
-        function displaySummary(data2023, data2024) {
-            const total2023 = data2023.reduce((a, b) => a + b, 0);
-            const total2024 = data2024.reduce((a, b) => a + b, 0);
+        function generateDashboardHTML(dataType) {
+            const containerId = dataType === 'quantity' ? 'quantityDashboard' : 'amountDashboard';
+            const unitLabel = dataType === 'quantity' ? 'unidades' : 'monto total';
+            const currencyPrefix = dataType === 'amount' ? 'en Monto' : '';
+            const topBottomLabel = dataType === 'quantity' ? 'Cantidad' : 'Monto';
+            
+            // Esta función solo genera el esqueleto si ya está creado
+            if(document.getElementById(containerId).innerHTML.trim() !== "") return;
+            
+            document.getElementById(containerId).innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="stat-label">Periodo 2023-2024</div>
+                            <div class="stat-value" id="total2023-${dataType}"></div>
+                            <div class="text-muted">Total de ${unitLabel}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="stat-label">Periodo 2024-2025</div>
+                            <div class="stat-value" id="total2024-${dataType}"></div>
+                            <div class="text-muted">Total de ${unitLabel}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="stat-label">Variación</div>
+                            <div class="stat-value" id="variation-${dataType}"></div>
+                            <div class="text-muted">Diferencia entre periodos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">📊 Comparación por Periodo ${currencyPrefix}</h3>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <h5 class="text-center">Periodo 2023-2024</h5>
+                            <div class="chart-container">
+                                <canvas id="chart2023-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <h5 class="text-center">Periodo 2024-2025</h5>
+                            <div class="chart-container">
+                                <canvas id="chart2024-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">📈 Tendencia Combinada ${currencyPrefix}</h3>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card p-3">
+                            <div class="chart-container">
+                                <canvas id="lineChart-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">🏆 Meses con Mayor ${topBottomLabel}</h3>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <span class="badge-top">TOP 3</span>
+                            <h5 class="text-center">Mejores Meses - Periodo 2023-2024</h5>
+                            <div class="chart-container-small">
+                                <canvas id="pieTop2023-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <span class="badge-top">TOP 3</span>
+                            <h5 class="text-center">Mejores Meses - Periodo 2024-2025</h5>
+                            <div class="chart-container-small">
+                                <canvas id="pieTop2024-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">📉 Meses con Menor ${topBottomLabel}</h3>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <span class="badge-bottom">LOW 3</span>
+                            <h5 class="text-center">Peores Meses - Periodo 2023-2024</h5>
+                            <div class="chart-container-small">
+                                <canvas id="pieBottom2023-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <span class="badge-bottom">LOW 3</span>
+                            <h5 class="text-center">Peores Meses - Periodo 2024-2025</h5>
+                            <div class="chart-container-small">
+                                <canvas id="pieBottom2024-${dataType}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 🟢 FUNCIÓN CORREGIDA
+        function displaySummaryCards(dataType, data2023, data2024) {
+            // Utilizamos los datos proporcionados por los filtros, o los datos globales si la llamada es inicial (data2023/data2024 es undefined)
+            const finalData2023 = data2023 !== undefined ? data2023 : allData[`${dataType}2023`];
+            const finalData2024 = data2024 !== undefined ? data2024 : allData[`${dataType}2024`];
+
+            const total2023 = finalData2023.reduce((a, b) => a + b, 0);
+            const total2024 = finalData2024.reduce((a, b) => a + b, 0);
             const variation = total2024 - total2023;
-            const variationPercent = total2023 > 0 ? ((variation / total2023) * 100).toFixed(2) : 0;
-
-            document.getElementById('total2023').textContent = total2023.toLocaleString();
-            document.getElementById('total2024').textContent = total2024.toLocaleString();
+            const variationPercent = total2023 > 0 ? ((variation / total2023) * 100) : 0;
             
-            const variationElement = document.getElementById('variation');
+            const formatValue = dataType === 'amount' 
+                ? (val) => currencyFormatter.format(val) 
+                : (val) => Math.round(val).toLocaleString('es-AR'); 
+
+            document.getElementById(`total2023-${dataType}`).textContent = formatValue(total2023);
+            document.getElementById(`total2024-${dataType}`).textContent = formatValue(total2024);
+            
+            const variationElement = document.getElementById(`variation-${dataType}`);
             const sign = variation >= 0 ? '+' : '';
-            variationElement.textContent = `${sign}${variation.toLocaleString()} (${sign}${variationPercent}%)`;
+            
+            let variationText = `${sign}${formatValue(variation)} (${sign}${variationPercent.toFixed(2)}%)`;
+            
+            variationElement.textContent = variationText;
             variationElement.className = `stat-value ${variation >= 0 ? 'positive' : 'negative'}`;
         }
 
-        function createCharts(labels, data2023, data2024) {
-            chartInstances.forEach(chart => chart.destroy());
-            chartInstances = [];
+        // --- Charts Generation ---
+        function createCharts(dataType, labels, data2023, data2024) {
+            // Destruir instancias anteriores del tipo de dato actual
+            Object.values(chartInstances[dataType] || {}).forEach(chart => chart && chart.destroy());
+            chartInstances[dataType] = {};
+            
+            // Si labels, data2023 o data2024 no se pasaron, usamos los datos globales
+            const currentLabels = labels !== undefined ? labels : allData.labels;
+            const currentData2023 = data2023 !== undefined ? data2023 : allData[`${dataType}2023`];
+            const currentData2024 = data2024 !== undefined ? data2024 : allData[`${dataType}2024`];
+            
+            const tooltipLabel = dataType === 'quantity' ? 'Cantidad' : 'Monto';
+            const unitLabel = dataType === 'quantity' ? '' : ' (ARS)';
+            
+            const currencyScale = dataType === 'amount' ? {
+                callbacks: {
+                    label: function(context) {
+                        return currencyFormatter.format(context.raw);
+                    }
+                }
+            } : {};
+            
+            const barOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (dataType === 'amount') {
+                                    label += currencyFormatter.format(context.parsed.y);
+                                } else {
+                                    label += context.parsed.y.toLocaleString('es-AR');
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: { display: true }
+                },
+                scales: { y: currencyScale }
+            };
 
-            // Column Chart 2023
-            chartInstances.push(new Chart(document.getElementById('chart2023'), {
+            // 1. Column Chart 2023
+            chartInstances[dataType]['chart2023'] = new Chart(document.getElementById(`chart2023-${dataType}`), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: currentLabels,
                     datasets: [{
-                        label: 'Cantidad 2023-2024',
-                        data: data2023,
+                        label: `${tooltipLabel} 2023-2024${unitLabel}`,
+                        data: currentData2023,
                         backgroundColor: 'rgba(102, 126, 234, 0.7)',
                         borderColor: 'rgba(102, 126, 234, 1)',
                         borderWidth: 2
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true }
-                    }
-                }
-            }));
+                options: barOptions
+            });
 
-            // Column Chart 2024
-            chartInstances.push(new Chart(document.getElementById('chart2024'), {
+            // 2. Column Chart 2024
+            chartInstances[dataType]['chart2024'] = new Chart(document.getElementById(`chart2024-${dataType}`), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: currentLabels,
                     datasets: [{
-                        label: 'Cantidad 2024-2025',
-                        data: data2024,
+                        label: `${tooltipLabel} 2024-2025${unitLabel}`,
+                        data: currentData2024,
                         backgroundColor: 'rgba(118, 75, 162, 0.7)',
                         borderColor: 'rgba(118, 75, 162, 1)',
                         borderWidth: 2
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true }
-                    }
-                }
-            }));
+                options: barOptions
+            });
 
-            // Line Chart Combined
-            chartInstances.push(new Chart(document.getElementById('lineChart'), {
+            // 3. Line Chart Combined
+            chartInstances[dataType]['lineChart'] = new Chart(document.getElementById(`lineChart-${dataType}`), {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: currentLabels,
                     datasets: [
                         {
-                            label: 'Periodo 2023-2024',
-                            data: data2023,
+                            label: `Periodo 2023-2024${unitLabel}`,
+                            data: currentData2023,
                             borderColor: 'rgba(102, 126, 234, 1)',
                             backgroundColor: 'rgba(102, 126, 234, 0.1)',
                             tension: 0.4,
                             fill: true
                         },
                         {
-                            label: 'Periodo 2024-2025',
-                            data: data2024,
+                            label: `Periodo 2024-2025${unitLabel}`,
+                            data: currentData2024,
                             borderColor: 'rgba(118, 75, 162, 1)',
                             backgroundColor: 'rgba(118, 75, 162, 0.1)',
                             tension: 0.4,
@@ -434,34 +649,43 @@
                         }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true }
-                    }
-                }
-            }));
+                options: barOptions
+            });
 
-            // Pie Charts - Separated Top and Bottom
-            createTopPieChart('pieTop2023', labels, data2023);
-            createTopPieChart('pieTop2024', labels, data2024);
-            createBottomPieChart('pieBottom2023', labels, data2023);
-            createBottomPieChart('pieBottom2024', labels, data2024);
+            // 4. Pie Charts - Top and Bottom
+            chartInstances[dataType]['pieTop2023'] = createTopPieChart(`pieTop2023-${dataType}`, currentLabels, currentData2023, dataType);
+            chartInstances[dataType]['pieTop2024'] = createTopPieChart(`pieTop2024-${dataType}`, currentLabels, currentData2024, dataType);
+            chartInstances[dataType]['pieBottom2023'] = createBottomPieChart(`pieBottom2023-${dataType}`, currentLabels, currentData2023, dataType);
+            chartInstances[dataType]['pieBottom2024'] = createBottomPieChart(`pieBottom2024-${dataType}`, currentLabels, currentData2024, dataType);
         }
 
-        function createTopPieChart(canvasId, labels, data) {
-            const indexed = data.map((val, idx) => ({ label: labels[idx], value: val }));
+        // 🟢 FUNCIÓN CORREGIDA
+        function createTopPieChart(canvasId, labels, data, dataType) {
+            // 1. Crear el array indexado y asegurar que solo hay meses válidos
+            const indexed = data
+                .map((val, idx) => ({ label: labels[idx], value: val }))
+                .filter(item => item.label);
+                
+            // 2. Ordenar de mayor a menor
             indexed.sort((a, b) => b.value - a.value);
-            const top3 = indexed.slice(0, 3);
+            
+            // 3. Tomar los 3 primeros y luego filtrar valores 0 o negativos.
+            const top3 = indexed.slice(0, 3).filter(item => item.value > 0); 
+
+            // Si top3 está vacío, no se crea el gráfico (se devuelve null)
+            if (top3.length === 0) {
+                 return null; 
+            }
 
             const colors = [
                 'rgba(40, 167, 69, 0.8)',
                 'rgba(102, 126, 234, 0.8)',
                 'rgba(52, 211, 153, 0.8)'
             ];
+            
+            const formatValue = dataType === 'amount' ? currencyFormatter.format : (val) => val.toLocaleString('es-AR');
 
-            chartInstances.push(new Chart(document.getElementById(canvasId), {
+            return new Chart(document.getElementById(canvasId), {
                 type: 'pie',
                 data: {
                     labels: top3.map(item => item.label),
@@ -476,18 +700,40 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatValue(context.parsed);
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: { position: 'bottom' }
                     }
                 }
-            }));
+            });
         }
-
-        function createBottomPieChart(canvasId, labels, data) {
-            const indexed = data.map((val, idx) => ({ label: labels[idx], value: val }));
+        
+        // 🟢 FUNCIÓN CORREGIDA
+        function createBottomPieChart(canvasId, labels, data, dataType) {
+            const indexed = data
+                .map((val, idx) => ({ label: labels[idx], value: val }))
+                .filter(item => item.label);
+                
+            // Ordenar por valor ascendente
             indexed.sort((a, b) => a.value - b.value);
-            const bottom3 = indexed.slice(0, 3);
+            
+            // Tomamos los 3 primeros elementos y luego filtramos para solo mostrar aquellos con valor > 0.
+            const bottom3 = indexed.slice(0, 3).filter(item => item.value > 0); 
+
+            // Si bottom3 está vacío, no se crea el gráfico (se devuelve null)
+            if (bottom3.length === 0) {
+                 return null; 
+            }
 
             const colors = [
                 'rgba(220, 53, 69, 0.8)',
@@ -495,7 +741,9 @@
                 'rgba(255, 193, 7, 0.8)'
             ];
 
-            chartInstances.push(new Chart(document.getElementById(canvasId), {
+            const formatValue = dataType === 'amount' ? currencyFormatter.format : (val) => val.toLocaleString('es-AR');
+
+            return new Chart(document.getElementById(canvasId), {
                 type: 'pie',
                 data: {
                     labels: bottom3.map(item => item.label),
@@ -510,12 +758,22 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatValue(context.parsed);
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: { position: 'bottom' }
                     }
                 }
-            }));
+            });
         }
     </script>
 </body>
