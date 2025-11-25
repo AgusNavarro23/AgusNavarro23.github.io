@@ -112,22 +112,27 @@
             display: inline-block;
             margin-bottom: 1rem;
         }
-        #amountTabContent {
-            /* Retira el filtro inicial, lo aplicaremos solo si está protegido */
-        }
-        #passwordOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(248, 249, 250, 0.9);
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+
+        .modal-content {
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        #amountDashboard .stat-value {
+            font-size: 1.6rem !important;
+        }
+        #amountDashboard .stat-label {
+            font-size: 0.65rem !important;
+        }
+        #amountDashboard .text-muted {
+            font-size: 0.65rem !important;
         }
     </style>
 </head>
@@ -184,20 +189,11 @@
                             </div>
                         </div>
                         <div id="quantityDashboard">
-                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="amount-tab-pane" role="tabpanel" aria-labelledby="amount-tab" tabindex="0" style="position: relative; min-height: 80vh;">
-                    <div id="passwordOverlay" style="display: none;">
-                        <div class="card p-4 shadow-lg text-center">
-                            <h4>Acceso Restringido 🔒</h4>
-                            <p>Ingresa la contraseña para ver los Montos.</p>
-                            <input type="password" id="passwordInput" class="form-control mb-3" placeholder="Contraseña">
-                            <button class="btn btn-primary" onclick="checkPassword()">Acceder</button>
-                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">Pista: Contraseña es 'admin'</p>
-                        </div>
-                    </div>
+                <div class="tab-pane fade" id="amount-tab-pane" role="tabpanel" aria-labelledby="amount-tab" tabindex="0">
                     <div id="amountTabContent">
                         <div class="filter-section">
                             <h5 class="mb-3">Filtros</h5>
@@ -221,8 +217,29 @@
                             </div>
                         </div>
                         <div id="amountDashboard">
-                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Contraseña -->
+    <div class="modal fade" id="passwordModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordModalLabel">🔒 Acceso Restringido</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="handleModalClose()"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Ingresa la contraseña para ver los Montos.</p>
+                    <input type="password" id="passwordInput" class="form-control" placeholder="Contraseña" onkeypress="handlePasswordKeypress(event)">
+                    <div id="passwordError" class="text-danger mt-2" style="display: none;">Contraseña incorrecta</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="handleModalClose()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="checkPassword()">Acceder</button>
                 </div>
             </div>
         </div>
@@ -240,7 +257,7 @@
         let chartInstances = {};
         let currentDataType = 'quantity';
         let isAmountUnlocked = false; // Nuevo estado para la protección
-        const PASSWORD = 'admin';
+        const PASSWORD = 'Gerencia.2025';
         
         // Formateador de moneda (ajusta a tu moneda local si es necesario)
         const currencyFormatter = new Intl.NumberFormat('es-AR', {
@@ -263,20 +280,57 @@
         // --- Password Logic ---
         function checkPassword() {
             const input = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+            
             if (input === PASSWORD) {
                 isAmountUnlocked = true;
-                document.getElementById('passwordOverlay').style.display = 'none';
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
+                modal.hide();
+                
+                // Limpiar input y error
+                document.getElementById('passwordInput').value = '';
+                errorDiv.style.display = 'none';
+                
+                // Aplicar filtros y cambiar a la pestaña
+                document.getElementById('filterMesDesdeM').value = 0;
+                document.getElementById('filterMesHastaM').value = 11;
                 switchData('amount');
             } else {
-                alert('Contraseña incorrecta.');
-                document.getElementById('passwordInput').value = ''; // Clear input
+                errorDiv.style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
             }
+        }
+
+        function handlePasswordKeypress(event) {
+            if (event.key === 'Enter') {
+                checkPassword();
+            }
+        }
+
+        function handleModalClose() {
+            // Volver a la pestaña de Cantidades si se cierra el modal sin autenticarse
+            if (!isAmountUnlocked) {
+                document.getElementById('quantity-tab').click();
+            }
+            // Limpiar input y error
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordError').style.display = 'none';
         }
 
         function handleAmountTabClick() {
             if (!isAmountUnlocked) {
-                document.getElementById('passwordOverlay').style.display = 'flex';
+                // Mostrar el modal
+                const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+                modal.show();
+                // Focus en el input después de que el modal se muestre
+                setTimeout(() => {
+                    document.getElementById('passwordInput').focus();
+                }, 500);
             } else {
+                document.getElementById('filterMesDesdeM').value = 0;
+                document.getElementById('filterMesHastaM').value = 11;
                 switchData('amount');
             }
         }
@@ -343,9 +397,6 @@
             
             // Hide/Show content
             document.getElementById('dashboardContent').style.display = 'block';
-            
-            // Ocultar el overlay de contraseña por defecto, se muestra al hacer clic
-            document.getElementById('passwordOverlay').style.display = 'flex';
         }
 
         // --- Filter Logic ---
@@ -392,7 +443,11 @@
         // --- Dashboard Management ---
         function switchData(dataType) {
             currentDataType = dataType;
-            
+            if (dataType === 'quantity') {
+                document.getElementById('filterMesDesdeQ').value = 0;
+                document.getElementById('filterMesHastaQ').value = 11;
+            }
+
             // Obtener los filtros aplicados (o defaults)
             const suffix = dataType === 'quantity' ? 'Q' : 'M';
             // Usar .value y asegurar que la data está sincronizada con el filtro actual
