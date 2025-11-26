@@ -112,7 +112,9 @@
             display: inline-block;
             margin-bottom: 1rem;
         }
-
+        #amountTabContent {
+            /* Retira el filtro inicial, lo aplicaremos solo si está protegido */
+        }
         .modal-content {
             border-radius: 15px;
         }
@@ -615,6 +617,13 @@
             const tooltipLabel = dataType === 'quantity' ? 'Cantidad' : 'Monto';
             const unitLabel = dataType === 'quantity' ? '' : ' (ARS)';
             
+            // Calcular el máximo valor entre ambos periodos para unificar la escala
+            const maxValue2023 = Math.max(...currentData2023);
+            const maxValue2024 = Math.max(...currentData2024);
+            const globalMax = Math.max(maxValue2023, maxValue2024);
+            // Agregar un 10% de margen superior
+            const suggestedMax = globalMax * 1.1;
+            
             const currencyScale = dataType === 'amount' ? {
                 callbacks: {
                     label: function(context) {
@@ -645,7 +654,13 @@
                     },
                     legend: { display: true }
                 },
-                scales: { y: currencyScale }
+                scales: { 
+                    y: {
+                        ...currencyScale,
+                        beginAtZero: true,
+                        max: suggestedMax
+                    }
+                }
             };
 
             // 1. Column Chart 2023
